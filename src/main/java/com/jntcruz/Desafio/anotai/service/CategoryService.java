@@ -4,6 +4,8 @@ import com.jntcruz.Desafio.anotai.domain.category.Category;
 import com.jntcruz.Desafio.anotai.domain.category.CategoryDTO;
 import com.jntcruz.Desafio.anotai.domain.category.exceptions.CategoryNotFoundException;
 import com.jntcruz.Desafio.anotai.repositories.CategoryRepository;
+import com.jntcruz.Desafio.anotai.service.aws.AwsSnsService;
+import com.jntcruz.Desafio.anotai.service.aws.MessageDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,13 +17,14 @@ import java.util.Optional;
 public class CategoryService {
 
     private final CategoryRepository repository;
-
+    private final AwsSnsService snsService;
 
     public Category insert(CategoryDTO categoryData){
         Category newCategory = new Category(categoryData);
 
         this.repository.save(newCategory);
 
+        this.snsService.publish(new MessageDTO(newCategory.toString()));
 
         return newCategory;
     }
@@ -33,6 +36,7 @@ public class CategoryService {
         if(!categoryData.title().isEmpty()) category.setTitle(categoryData.title());
         if(!categoryData.description().isEmpty()) category.setDescription(categoryData.description());
 
+        this.snsService.publish(new MessageDTO(category.toString()));
 
         this.repository.save(category);
 
@@ -44,6 +48,7 @@ public class CategoryService {
                 .orElseThrow(CategoryNotFoundException::new);
 
         this.repository.delete(category);
+        this.snsService.publish(new MessageDTO(category.deleteToString()));
     }
 
     public List<Category> getAll(){
